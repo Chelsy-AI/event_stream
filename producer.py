@@ -1,34 +1,38 @@
-import json
+import time
 import uuid
-
+import json
 from confluent_kafka import Producer
+import random
 
-producer_config = {
-    "bootstrap.servers": "localhost:9092"
-}
+# Kafka setup
+producer = Producer({'bootstrap.servers': 'localhost:9092'})
+topic = "translations"
 
-producer = Producer(producer_config)
+# Sample French phrases
+french_phrases = [
+    "Bonjour",
+    "Comment ça va?",
+    "Je suis étudiant",
+    "J'aime le chocolat",
+    "Merci beaucoup"
+]
 
 def delivery_report(err, msg):
     if err:
-        print(f"❌ Delivery failed: {err}")
+        print(f"❌ Message failed: {err}")
     else:
-        print(f"✅ Delivered {msg.value().decode("utf-8")}")
-        print(f"✅ Delivered to {msg.topic()} : partition {msg.partition()} : at offset {msg.offset()}")
+        print(f"✅ Delivered {msg.value().decode('utf-8')} to {msg.topic()} : partition {msg.partition()} : offset {msg.offset()}")
 
-order = {
-    "order_id": str(uuid.uuid4()),
-    "user": "lara",
-    "item": "frozen yogurt",
-    "quantity": 10
-}
+print("🚀 Producer is running...")
 
-value = json.dumps(order).encode("utf-8")
-
-producer.produce(
-    topic="orders",
-    value=value,
-    callback=delivery_report
-)
-
-producer.flush()
+# Send phrases in a loop
+while True:
+    phrase = random.choice(french_phrases)
+    event = {
+        "eventId": str(uuid.uuid4()),
+        "french": phrase,
+        "timestamp": int(time.time())
+    }
+    producer.produce(topic, value=json.dumps(event).encode('utf-8'), callback=delivery_report)
+    producer.flush()
+    time.sleep(2)  
